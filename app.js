@@ -11,14 +11,19 @@ const supabaseClient = supabase.createClient(
 );
 
 // =========================
-// 👤 当前用户状态
+// 👤 当前用户
 // =========================
 let currentUser = null;
 
 // =========================
-// 🧑 当前用户角色
+// 🧑 当前角色
 // =========================
 let currentRole = "free";
+
+// =========================
+// 📊 当前使用次数
+// =========================
+let currentUsage = 0;
 
 // =========================
 // 👤 获取当前登录用户
@@ -31,15 +36,13 @@ async function getUser() {
 
   console.log("Current User:", currentUser);
 
-  // 如果已经登录
   if (currentUser) {
 
-    // 显示当前用户
-    document.getElementById("status").innerText =
-      "Logged in: " + currentUser.email;
-
-    // 获取角色
     await getUserRole();
+
+    await getUsage();
+
+    updateStatusUI();
   }
 }
 
@@ -63,13 +66,138 @@ async function getUserRole() {
 
   currentRole = data.role;
 
-  console.log("USER ROLE:", currentRole);
-
-  document.getElementById("status").innerText =
-    `Logged in: ${currentUser.email} (${currentRole})`;
+  console.log("ROLE:", currentRole);
 }
 
-// 页面加载时自动检测登录状态
+// =========================
+// 📊 获取使用次数
+// =========================
+async function getUsage() {
+
+  if (!currentUser) return;
+
+  const today = new Date().toISOString().split("T")[0];
+
+  let { data, error } = await supabaseClient
+    .from("message_usage")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .single();
+
+  // 如果不存在 → 自动创建
+  if (error || !data) {
+
+    const { error: insertError } = await supabaseClient
+      .from("message_usage")
+      .insert([
+        {
+          user_id: currentUser.id,
+          count: 0,
+          last_reset: today
+        }
+      ]);
+
+    if (insertError) {
+      console.error(insertError);
+      return;
+    }
+
+    currentUsage = 0;
+
+    return;
+  }
+
+  // 日期变化 → 自动重置
+  if (data.last_reset !== today) {
+
+    await supabaseClient
+      .from("message_usage")
+      .update({
+        count: 0,
+        last_reset: today
+      })
+      .eq("user_id", currentUser.id);
+
+    currentUsage = 0;
+
+  } else {
+
+    currentUsage = data.count;
+  }
+
+  console.log("USAGE:", currentUsage);
+}
+
+// =========================
+// 📈 增加使用次数
+// =========================
+async function increaseUsage() {
+
+  if (!currentUser) return;
+
+  currentUsage++;
+
+  await supabaseClient
+    .from("message_usage")
+    .update({
+      count: currentUsage
+    })
+    .eq("user_id", currentUser.id);
+
+  updateStatusUI();
+}
+
+// =========================
+// 🧠 获取限制次数
+// =========================
+function getLimitByRole() {
+
+  if (currentRole === "super") {
+    return Infinity;
+  }
+
+  if (currentRole === "pro") {
+    return 50;
+  }
+
+  return 20;
+}
+
+// =========================
+// 🤖 根据角色切模型
+// =========================
+function getModelByRole() {
+
+  // super
+  if (currentRole === "super") {
+    return "openai/gpt-4.1";
+  }
+
+  // pro
+  if (currentRole === "pro") {
+    return "deepseek/deepseek-chat-v3-0324";
+  }
+
+  // free
+  return "deepseek/deepseek-chat-v3-0324:free";
+}
+
+// =========================
+// 📋 更新状态UI
+// =========================
+function updateStatusUI() {
+
+  const limit = getLimitByRole();
+
+  let limitText = limit === Infinity
+    ? "∞"
+    : limit;
+
+  document.getElementById("status").innerText =
+    `Logged in: ${currentUser.email} | ${currentRole} | ${currentUsage}/${limitText}`;
+}
+
+// 页面加载自动检测
 getUser();
 
 // =========================
@@ -99,32 +227,23 @@ input.addEventListener("keypress", (e) => {
 });
 
 // =========================
-// 🤖 根据角色切换模型
-// =========================
-function getModelByRole() {
-
-  // super
-  if (currentRole === "super") {
-    return "openai/gpt-4.1";
-  }
-
-  // pro
-  if (currentRole === "pro") {
-    return "deepseek/deepseek-chat-v3-0324";
-  }
-
-  // free
-  return "deepseek/deepseek-chat-v3-0324:free";
-}
-
-// =========================
-// 🚀 发送消息（核心AI逻辑）
+// 🚀 发送消息
 // =========================
 async function sendMessage() {
 
-  // 未登录禁止聊天
+  // 未登录
   if (!currentUser) {
     alert("Please login first.");
+    return;
+  }
+
+  // 检查次数限制
+  const limit = getLimitByRole();
+
+  if (currentUsage >= limit) {
+
+    alert("Daily message limit reached.");
+
     return;
   }
 
@@ -134,7 +253,7 @@ async function sendMessage() {
 
   if (!userMessage) return;
 
-  // 显示用户消息
+  // 用户消息
   chatBox.innerHTML += `
     <div class="message user-message">
       <div class="bubble">${userMessage}</div>
@@ -150,7 +269,7 @@ async function sendMessage() {
     content: userMessage
   });
 
-  // AI UI
+  // AI消息
   const aiDiv = document.createElement("div");
 
   aiDiv.className = "message ai-message";
@@ -169,10 +288,9 @@ async function sendMessage() {
 
   try {
 
-    // 根据角色自动切模型
     const model = getModelByRole();
 
-    console.log("Using model:", model);
+    console.log("MODEL:", model);
 
     const response = await fetch("https://api.hippo1996.top", {
       method: "POST",
@@ -187,20 +305,14 @@ async function sendMessage() {
 
     const raw = await response.text();
 
-    console.log("RAW RESPONSE:", raw);
-
-    if (!raw) {
-      bubble.innerHTML = "Error: Empty response from server";
-      return;
-    }
+    console.log(raw);
 
     let data;
 
     try {
       data = JSON.parse(raw);
     } catch (e) {
-      bubble.innerHTML = "JSON parse error. Check console.";
-      console.error("Parse error:", raw);
+      bubble.innerHTML = "JSON parse error";
       return;
     }
 
@@ -210,10 +322,12 @@ async function sendMessage() {
       "";
 
     if (!text) {
-      bubble.innerHTML = "No response (empty text)";
-      console.error("Bad response:", data);
+      bubble.innerHTML = "Empty response";
       return;
     }
+
+    // 增加使用次数
+    await increaseUsage();
 
     // 打字效果
     bubble.innerHTML = "";
@@ -289,13 +403,12 @@ window.handleSignup = async function () {
 
     console.log(data);
 
-    // 获取用户
     const user = data.user;
 
     if (user) {
 
-      // 自动创建 profile
-      const { error: profileError } = await supabaseClient
+      // 创建 profile
+      await supabaseClient
         .from("user_profiles")
         .insert([
           {
@@ -304,14 +417,7 @@ window.handleSignup = async function () {
           }
         ]);
 
-      if (profileError) {
-
-        console.error("Profile Error:", profileError);
-
-      } else {
-
-        console.log("Profile created!");
-      }
+      console.log("Profile created!");
     }
   }
 };
@@ -325,7 +431,7 @@ window.handleLogin = async function () {
 
   const password = document.getElementById("password").value;
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
+  const { error } = await supabaseClient.auth.signInWithPassword({
     email,
     password
   });
@@ -338,9 +444,6 @@ window.handleLogin = async function () {
 
     document.getElementById("status").innerText = "登录成功！";
 
-    console.log(data);
-
-    // 获取当前用户
     await getUser();
   }
 };
