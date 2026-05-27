@@ -8,6 +8,17 @@
 </head>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <body>
+<div id="auth-box" style="padding:20px; border:1px solid #ccc; margin:10px;">
+  <h3>Login / Register</h3>
+
+  <input id="email" placeholder="Email" style="display:block; margin:5px;" />
+  <input id="password" type="password" placeholder="Password" style="display:block; margin:5px;" />
+
+  <button onclick="handleSignup()">注册</button>
+  <button onclick="handleLogin()">登录</button>
+
+  <p id="status"></p>
+</div>
 
   <div class="container">
     <h1>🦛 Hippo AI</h1>

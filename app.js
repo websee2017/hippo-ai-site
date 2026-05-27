@@ -142,3 +142,35 @@ function scrollToBottom() {
   const chatBox = document.getElementById("chat-box");
   chatBox.scrollTop = chatBox.scrollHeight;
 }
+async function handleSignup() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password
+  });
+
+  if (error) {
+    document.getElementById("status").innerText = error.message;
+  } else {
+    document.getElementById("status").innerText = "注册成功！";
+  }
+}
+
+async function handleLogin() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    document.getElementById("status").innerText = error.message;
+  } else {
+    document.getElementById("status").innerText = "登录成功！";
+    console.log(data);
+  }
+}
