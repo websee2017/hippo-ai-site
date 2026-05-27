@@ -1,3 +1,11 @@
+const SUPABASE_URL = "https://komjwvwxeaqfnxfphxou.supabase.co";
+
+const SUPABASE_KEY = "sb_publishable_1atUPorr5mJZO09jVcvkXw_v_dM7qPN";
+
+const supabaseClient = supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 let conversationHistory = [
   {
     role: "system",
