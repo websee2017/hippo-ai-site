@@ -1,3 +1,6 @@
+// =========================
+// 🧠 Supabase 初始化
+// =========================
 const SUPABASE_URL = "https://komjwvwxeaqfnxfphxou.supabase.co";
 
 const SUPABASE_KEY = "sb_publishable_1atUPorr5mJZO09jVcvkXw_v_dM7qPN";
@@ -6,6 +9,25 @@ const supabaseClient = supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
+
+// =========================
+// 👤 当前用户状态
+// =========================
+let currentUser = null;
+
+// 获取当前登录用户
+async function getUser() {
+  const { data } = await supabaseClient.auth.getUser();
+  currentUser = data.user;
+  console.log("Current User:", currentUser);
+}
+
+// 页面加载时自动检测登录状态
+getUser();
+
+// =========================
+// 💬 AI对话历史
+// =========================
 let conversationHistory = [
   {
     role: "system",
@@ -20,12 +42,18 @@ Rules:
   }
 ];
 
+// =========================
+// ⌨️ 输入监听
+// =========================
 const input = document.getElementById("user-input");
 
 input.addEventListener("keypress", (e) => {
   if (e.key === "Enter") sendMessage();
 });
 
+// =========================
+// 🚀 发送消息（核心AI逻辑）
+// =========================
 async function sendMessage() {
   const chatBox = document.getElementById("chat-box");
   const userMessage = input.value.trim();
@@ -61,7 +89,6 @@ async function sendMessage() {
   scrollToBottom();
 
   try {
-
     const response = await fetch("https://api.hippo1996.top", {
       method: "POST",
       headers: {
@@ -73,11 +100,7 @@ async function sendMessage() {
       })
     });
 
-    // =========================
-    // 🚨 强制读取原始文本（避免json炸）
-    // =========================
     const raw = await response.text();
-
     console.log("RAW RESPONSE:", raw);
 
     if (!raw) {
@@ -94,9 +117,6 @@ async function sendMessage() {
       return;
     }
 
-    // =========================
-    // 🚨 兼容所有返回结构
-    // =========================
     const text =
       data?.text ||
       data?.choices?.[0]?.message?.content ||
@@ -108,9 +128,7 @@ async function sendMessage() {
       return;
     }
 
-    // =========================
-    // 🟢 ChatGPT打字效果（稳定版）
-    // =========================
+    // 打字效果
     bubble.innerHTML = "";
 
     let i = 0;
@@ -138,10 +156,17 @@ async function sendMessage() {
   }
 }
 
+// =========================
+// 📜 滚动到底部
+// =========================
 function scrollToBottom() {
   const chatBox = document.getElementById("chat-box");
   chatBox.scrollTop = chatBox.scrollHeight;
 }
+
+// =========================
+// 🧾 注册
+// =========================
 async function handleSignup() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
@@ -155,9 +180,13 @@ async function handleSignup() {
     document.getElementById("status").innerText = error.message;
   } else {
     document.getElementById("status").innerText = "注册成功！";
+    console.log(data);
   }
 }
 
+// =========================
+// 🔐 登录
+// =========================
 async function handleLogin() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
@@ -172,5 +201,8 @@ async function handleLogin() {
   } else {
     document.getElementById("status").innerText = "登录成功！";
     console.log(data);
+
+    // 获取用户信息（关键）
+    getUser();
   }
 }
