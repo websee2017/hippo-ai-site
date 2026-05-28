@@ -4,56 +4,33 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hippo AI</title>
-
   <link rel="stylesheet" href="style.css" />
-
-  <!-- ✅ Supabase SDK（必须放head） -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-
-  <!-- 可选：Markdown渲染 -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
-
 <body>
 
-  <!-- =========================
-       🔐 登录区域
-  ========================== -->
-  <div id="auth-box" style="padding:20px; border:1px solid #ccc; margin:10px;">
-    <h3>Login / Register</h3>
+  <div class="container">
 
-    <input id="email" placeholder="Email" style="display:block; margin:5px;" />
-    <input id="password" type="password" placeholder="Password" style="display:block; margin:5px;" />
+    <h1>Hippo AI</h1>
+    <p class="subtitle">Your Private AI Assistant</p>
 
-    <button onclick="handleSignup()">注册</button>
-    <button onclick="handleLogin()">登录</button>
+    <div class="auth-box">
 
-    <p id="status"></p>
-  </div>
+      <input type="email" id="email" placeholder="Email" />
 
-  <!-- =========================
-       🦛 AI 聊天区域
-  ========================== -->
-  <div class="container" id="chat-app">
+      <input type="password" id="password" placeholder="Password" />
 
-    <h1>🦛 Hippo AI</h1>
+      <div class="buttons">
+        <button onclick="login()">Login</button>
+        <button onclick="register()">Register</button>
+      </div>
 
-    <div id="chat-box"></div>
+      <p id="message"></p>
 
-    <div class="input-area">
-      <input 
-        type="text" 
-        id="user-input" 
-        placeholder="Message Hippo AI..."
-      />
-      <button onclick="sendMessage()">Send</button>
     </div>
 
   </div>
 
-  <!-- =========================
-       📦 主逻辑
-  ========================== -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script src="app.js"></script>
 
 </body>
