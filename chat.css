@@ -1,0 +1,103 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f7f8fa;
+}
+
+/* 整体结构 */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* 顶部栏 */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: white;
+    border-bottom: 1px solid #eee;
+}
+
+.brand {
+    font-weight: bold;
+}
+
+.actions button {
+    margin-left: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    border: none;
+    border-radius: 8px;
+    background: #1a73e8;
+    color: white;
+    cursor: pointer;
+}
+
+.actions button:hover {
+    background: #1558b0;
+}
+
+/* 消息区 */
+.messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+/* 消息气泡 */
+.msg {
+    max-width: 700px;
+    margin: 10px auto;
+    padding: 12px 14px;
+    border-radius: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* 用户消息 */
+.user {
+    background: #1a73e8;
+    color: white;
+    margin-left: auto;
+}
+
+/* AI消息 */
+.ai {
+    background: white;
+    border: 1px solid #eee;
+    margin-right: auto;
+}
+
+/* 输入区 */
+.input-area {
+    display: flex;
+    padding: 12px;
+    background: white;
+    border-top: 1px solid #eee;
+}
+
+.input-area input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    outline: none;
+}
+
+.input-area button {
+    margin-left: 10px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    background: #1a73e8;
+    color: white;
+    cursor: pointer;
+}
+
+.input-area button:hover {
+    background: #1558b0;
+}

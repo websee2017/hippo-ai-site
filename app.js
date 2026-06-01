@@ -1,96 +1,129 @@
-// =====================
-// Supabase 初始化
-// =====================
-const SUPABASE_URL = "https://komjwvwxeaqfnxfphxou.supabase.co";
-const SUPABASE_KEY = "sb_publishable_1atUPorr5mJZO09jVcvkXw_v_dM7qPN";
+/* =========================
+   Supabase
+========================= */
+const supabaseUrl = "https://komjwvwxeaqfnxfphxou.supabase.co";
+const supabaseKey = "sb_publishable_1atUPorr5mJZO09jVcvkXw_v_dM7qPN";
 
-const supabaseClient = supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
+const client = supabase.createClient(supabaseUrl, supabaseKey);
 
-// =====================
-// 注册
-// =====================
-async function register() {
+/* =========================
+   登录检查
+========================= */
+let currentUser = null;
 
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  const message = document.getElementById("message");
+async function checkLogin() {
+    const { data } = await client.auth.getUser();
 
-  if (!email || !password) {
-    message.innerText = "Please enter email and password";
-    return;
-  }
+    if (!data.user) {
+        window.location.href = "index.html";
+        return;
+    }
 
-  const { data, error } = await supabaseClient.auth.signUp({
-    email,
-    password
-  });
+    currentUser = data.user;
+}
+checkLogin();
 
-  if (error) {
-    message.innerText = error.message;
-    return;
-  }
+/* =========================
+   localStorage
+========================= */
+let messages = JSON.parse(localStorage.getItem("chat_history")) || [];
 
-  const user = data.user;
+/* =========================
+   渲染消息
+========================= */
+function render() {
+    const box = document.getElementById("messages");
+    box.innerHTML = "";
 
-  if (!user) {
-    message.innerText = "User not created (check email confirmation)";
-    return;
-  }
+    messages.forEach(m => {
+        const div = document.createElement("div");
+        div.className = "msg " + (m.role === "user" ? "user" : "ai");
+        div.innerText = m.content;
+        box.appendChild(div);
+    });
 
-  // =====================
-  // 写入 user_profiles（关键）
-  // =====================
-  const { error: insertError } = await supabaseClient
-    .from("user_profiles")
-    .insert([
-      {
-        user_id: user.id,
-        email: email,
-        role: "free",
-        daily_limit: 20
-      }
-    ]);
+    box.scrollTop = box.scrollHeight;
+}
+render();
 
-  if (insertError) {
-    console.log(insertError);
-    message.innerText = "Profile create failed: " + insertError.message;
-    return;
-  }
+/* =========================
+   发送消息
+========================= */
+async function sendMessage() {
 
-  message.style.color = "#4ade80";
-  message.innerText = "Register success! Redirecting...";
+    const input = document.getElementById("input");
+    const text = input.value.trim();
+    if (!text) return;
 
-  setTimeout(() => {
-    window.location.href = "https://chat.hippo1996.top";
-  }, 1000);
+    input.value = "";
+
+    // 用户消息
+    messages.push({ role: "user", content: text });
+
+    render();
+    save();
+
+    // 调 Worker
+    const res = await fetch("YOUR_WORKER_URL", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages })
+    });
+
+    const data = await res.json();
+
+    const reply = data.reply || "No response";
+
+    messages.push({ role: "assistant", content: reply });
+
+    // 保留最近20轮（40条）
+    if (messages.length > 40) {
+        messages = messages.slice(-40);
+    }
+
+    render();
+    save();
 }
 
-// =====================
-// 登录
-// =====================
-async function login() {
+/* =========================
+   保存
+========================= */
+function save() {
+    localStorage.setItem("chat_history", JSON.stringify(messages));
+}
 
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  const message = document.getElementById("message");
+/* =========================
+   新聊天
+========================= */
+function newChat() {
+    messages = [];
+    save();
+    render();
+}
 
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password
-  });
+/* =========================
+   登出
+========================= */
+async function logout() {
+    await client.auth.signOut();
+    window.location.href = "index.html";
+}
 
-  if (error) {
-    message.innerText = error.message;
-    return;
-  }
+/* =========================
+   修改密码
+========================= */
+async function changePassword() {
 
-  message.style.color = "#4ade80";
-  message.innerText = "Login success! Redirecting...";
+    const newPassword = prompt("Enter new password:");
+    if (!newPassword) return;
 
-  setTimeout(() => {
-    window.location.href = "https://chat.hippo1996.top";
-  }, 800);
+    const { error } = await client.auth.updateUser({
+        password: newPassword
+    });
+
+    if (error) {
+        alert(error.message);
+    } else {
+        alert("Password updated successfully!");
+    }
 }
