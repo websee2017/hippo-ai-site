@@ -1,37 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Hippo AI</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Hippo AI</title>
+
+<link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-  <div class="container">
+<div class="page">
 
-    <h1>Hippo AI</h1>
-    <p class="subtitle">Your Private AI Assistant</p>
+    <!-- 左侧品牌区 -->
+    <div class="left">
 
-    <div class="auth-box">
+        <div class="hippo-wrap">
+            <svg width="110" height="110" viewBox="0 0 24 24" fill="none">
+                <path d="M6 10c0-3 2.5-5 6-5s6 2 6 5v4c0 3-2.5 5-6 5s-6-2-6-5v-4z"
+                      fill="#1a73e8"/>
+                <circle cx="9" cy="12" r="1" fill="white"/>
+                <circle cx="15" cy="12" r="1" fill="white"/>
+            </svg>
+        </div>
 
-      <input type="email" id="email" placeholder="Email" />
-
-      <input type="password" id="password" placeholder="Password" />
-
-      <div class="buttons">
-        <button onclick="login()">Login</button>
-        <button onclick="register()">Register</button>
-      </div>
-
-      <p id="message"></p>
+        <h1 class="brand">Hippo AI</h1>
+        <p class="desc">A simple, fast AI assistant built for you.</p>
 
     </div>
 
-  </div>
+    <!-- 右侧登录区 -->
+    <div class="right">
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="app.js"></script>
+        <div class="card">
+
+            <h2>Welcome back</h2>
+            <p class="sub">Sign in to continue</p>
+
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Password">
+
+            <button onclick="login()">Sign in</button>
+
+            <div class="forgot" onclick="forgotPassword()">
+                Forgot password?
+            </div>
+
+            <div id="msg"></div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const supabaseUrl = "https://komjwvwxeaqfnxfphxou.supabase.co";
+const supabaseKey = "sb_publishable_1atUPorr5mJZO09jVcvkXw_v_dM7qPN";
+
+const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+async function login() {
+
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    const { error } = await client.auth.signInWithPassword({
+        email,
+        password
+    });
+
+    if (error) {
+        document.getElementById("msg").innerText = error.message;
+        return;
+    }
+
+    window.location.href = "chat.html";
+}
+
+async function forgotPassword() {
+
+    const email = document.getElementById("email").value;
+
+    if (!email) {
+        document.getElementById("msg").innerText = "Please enter email first";
+        return;
+    }
+
+    const { error } = await client.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + "/index.html"
+    });
+
+    document.getElementById("msg").innerText =
+        error ? error.message : "Reset email sent!";
+}
+</script>
 
 </body>
 </html>
