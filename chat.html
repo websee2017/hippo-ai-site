@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
 <title>Hippo AI Chat</title>
 
 <link rel="stylesheet" href="chat.css">
@@ -14,23 +16,53 @@
 
     <!-- 顶部栏 -->
     <div class="topbar">
-        <div class="brand">🦛 Hippo AI</div>
+
+        <div class="brand">
+            🦛 Hippo AI
+            <span id="userEmail"></span>
+        </div>
 
         <div class="actions">
-            <button onclick="changePassword()">Change Password</button>
-            <button onclick="newChat()">New Chat</button>
-            <button onclick="logout()">Logout</button>
+
+            <button onclick="changePassword()">
+                Change Password
+            </button>
+
+            <button onclick="newChat()">
+                New Chat
+            </button>
+
+            <button onclick="logout()">
+                Logout
+            </button>
+
         </div>
+
     </div>
 
     <!-- 消息区 -->
-    <div id="messages" class="messages"></div>
+    <div id="messages"
+         class="messages">
+    </div>
 
     <!-- 输入区 -->
     <div class="input-area">
-        <input id="input" placeholder="Ask something..."
-               onkeydown="if(event.key==='Enter')sendMessage()">
-        <button onclick="sendMessage()">Send</button>
+
+        <input
+            id="input"
+            placeholder="Ask Hippo AI anything..."
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            onkeydown="if(event.key==='Enter')sendMessage()">
+
+        <button
+            id="sendBtn"
+            onclick="sendMessage()">
+            Send
+        </button>
+
     </div>
 
 </div>
@@ -38,7 +70,7 @@
 <!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- 逻辑 -->
+<!-- App -->
 <script src="app.js"></script>
 
 </body>
