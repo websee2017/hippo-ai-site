@@ -61,6 +61,104 @@ let messages =
 let isSending = false;
 
 /* =========================
+   图片上传
+========================= */
+
+let uploadedImage = null;
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        const fileInput =
+            document.getElementById(
+                "fileInput"
+            );
+
+        const fileInfo =
+            document.getElementById(
+                "fileInfo"
+            );
+
+        if (!fileInput) return;
+
+        fileInput.addEventListener(
+            "change",
+            (e) => {
+
+                const file =
+                    e.target.files[0];
+
+                if (!file) return;
+
+                // 1MB限制
+
+                if (
+                    file.size >
+                    1024 * 1024
+                ) {
+
+                    alert(
+                        "File size cannot exceed 1MB."
+                    );
+
+                    fileInput.value = "";
+
+                    fileInfo.textContent =
+                        "No file selected";
+
+                    uploadedImage = null;
+
+                    return;
+                }
+
+                // PDF暂不支持
+
+                if (
+                    file.type ===
+                    "application/pdf"
+                ) {
+
+                    alert(
+                        "PDF support coming soon."
+                    );
+
+                    fileInput.value = "";
+
+                    fileInfo.textContent =
+                        "No file selected";
+
+                    uploadedImage = null;
+
+                    return;
+                }
+
+                const reader =
+                    new FileReader();
+
+                reader.onload =
+                    function () {
+
+                        uploadedImage = {
+                            type:
+                                file.type,
+                            data:
+                                reader.result
+                        };
+
+                        fileInfo.textContent =
+                            file.name;
+                    };
+
+                reader.readAsDataURL(
+                    file
+                );
+            }
+        );
+    }
+);
+
+/* =========================
    渲染消息
 ========================= */
 
@@ -176,7 +274,12 @@ async function sendMessage() {
     const text =
         input.value.trim();
 
-    if (!text) return;
+    if (
+    !text &&
+    !uploadedImage
+) {
+    return;
+}
 
     isSending = true;
 
@@ -206,12 +309,43 @@ async function sendMessage() {
 
     try {
 
-        const contextMessages =
-            messages
-                .filter(
-                    m => !m.thinking
-                )
-                .slice(-40);
+        let contextMessages =
+    messages
+        .filter(
+            m => !m.thinking
+        )
+        .slice(-40);
+
+if (uploadedImage) {
+
+    contextMessages = [
+
+        ...contextMessages,
+
+        {
+            role: "user",
+
+            content: [
+
+                {
+                    type: "text",
+                    text:
+                        text ||
+                        "Analyze this image."
+                },
+
+                {
+                    type: "image_url",
+
+                    image_url: {
+                        url:
+                            uploadedImage.data
+                    }
+                }
+            ]
+        }
+    ];
+}
 
         const response =
             await fetchWithTimeout(
@@ -244,6 +378,24 @@ async function sendMessage() {
         const reply =
             data.reply ||
             "No response.";
+            uploadedImage = null;
+
+const fileInput =
+    document.getElementById(
+        "fileInput"
+    );
+
+const fileInfo =
+    document.getElementById(
+        "fileInfo"
+    );
+
+if (fileInput)
+    fileInput.value = "";
+
+if (fileInfo)
+    fileInfo.textContent =
+        "No file selected";
 
         /* 删除Thinking */
 
