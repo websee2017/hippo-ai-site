@@ -12,81 +12,112 @@
 
 <body>
 
-<div class="chat-container">
+<div class="app-layout">
 
-    <!-- 顶部栏 -->
-    <div class="topbar">
+    <!-- 左侧会话栏 -->
+    <div class="sidebar">
 
-        <div class="brand">
-            🦛 Hippo AI
-            <span id="userEmail"></span>
+        <div class="sidebar-header">
+
+            <button
+                class="new-chat-btn"
+                onclick="newChat()">
+
+                + New Chat
+
+            </button>
+
         </div>
 
-        <div class="actions">
-
-            <button onclick="changePassword()">
-                Change Password
-            </button>
-
-            <button onclick="newChat()">
-                New Chat
-            </button>
-
-            <button onclick="logout()">
-                Logout
-            </button>
+        <div
+            id="chatList"
+            class="chat-list">
 
         </div>
 
     </div>
 
-    <!-- 消息区 -->
-    <div id="messages"
-         class="messages">
-    </div>
+    <!-- 主聊天区域 -->
+    <div class="chat-container">
 
-    <!-- 上传区 -->
-    <div class="upload-area">
+        <!-- 顶部栏 -->
+        <div class="topbar">
 
-        <input
-            type="file"
-            id="fileInput"
-            accept="image/png,image/jpeg,image/jpg,image/webp,.pdf">
+            <div class="brand">
 
-        <div id="fileInfo"
-             class="file-info">
+                🦛 Hippo AI
 
-            No file selected
+                <span id="userEmail"></span>
+
+            </div>
+
+            <div class="actions">
+
+                <button onclick="changePassword()">
+                    Change Password
+                </button>
+
+                <button onclick="logout()">
+                    Logout
+                </button>
+
+            </div>
 
         </div>
 
-        <div class="upload-tip">
+        <!-- 消息区 -->
+        <div
+            id="messages"
+            class="messages">
+        </div>
 
-            Supports JPG, PNG, WEBP images.<br>
-            PDF support coming soon.<br>
-            Maximum file size: 1MB
+        <!-- 上传区 -->
+        <div class="upload-area">
+
+            <input
+                type="file"
+                id="fileInput"
+                accept="image/png,image/jpeg,image/jpg,image/webp,.pdf">
+
+            <div
+                id="fileInfo"
+                class="file-info">
+
+                No file selected
+
+            </div>
+
+            <div class="upload-tip">
+
+                Supports JPG, PNG, WEBP images.<br>
+                PDF support coming soon.<br>
+                Maximum file size: 1MB
+
+            </div>
 
         </div>
 
-    </div>
+        <!-- 输入区 -->
+        <div class="input-area">
 
-    <!-- 输入区 -->
-    <div class="input-area">
+            <input
+                id="input"
+                placeholder="Ask Hippo AI anything..."
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                onkeydown="if(event.key==='Enter')sendMessage()">
 
-        <input
-            id="input"
-            placeholder="Ask Hippo AI anything..."
-            autocomplete="off"
-            autocorrect="off"
-            autocapitalize="off"
-            spellcheck="false"
-            onkeydown="if(event.key==='Enter')sendMessage()">
+            <button
+                id="sendBtn"
+                onclick="sendMessage()">
 
-        <button
-            id="sendBtn"
-            onclick="sendMessage()">
-            Send
-        </button>
+                Send
+
+            </button>
+
+        </div>
 
     </div>
 

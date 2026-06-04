@@ -43,16 +43,92 @@ async function checkLogin() {
 
 checkLogin();
 
+function saveSessions() {
+
+    localStorage.setItem(
+        "chat_sessions",
+        JSON.stringify(
+            sessions
+        )
+    );
+
+    localStorage.setItem(
+        "current_session",
+        currentSessionId
+    );
+}
+
+function getCurrentSession() {
+
+    return sessions.find(
+        s =>
+            s.id ===
+            currentSessionId
+    );
+}
+
+function getMessages() {
+
+    const session =
+        getCurrentSession();
+
+    return session
+        ? session.messages
+        : [];
+}
+
+function setMessages(arr) {
+
+    const session =
+        getCurrentSession();
+
+    if (!session) return;
+
+    session.messages = arr;
+
+    saveSessions();
+}
+
 /* =========================
-   本地聊天记录
+   多会话系统
 ========================= */
 
-let messages =
+let sessions =
     JSON.parse(
         localStorage.getItem(
-            "chat_history"
+            "chat_sessions"
         )
     ) || [];
+
+let currentSessionId =
+    localStorage.getItem(
+        "current_session"
+    );
+
+/* =========================
+   初始化
+========================= */
+
+if (sessions.length === 0) {
+
+    const firstSession = {
+
+        id: Date.now().toString(),
+
+        title: "New Chat",
+
+        messages: []
+    };
+
+    sessions.push(
+        firstSession
+    );
+
+    currentSessionId =
+        firstSession.id;
+
+    saveSessions();
+}
 
 /* =========================
    状态控制
@@ -164,6 +240,9 @@ document.addEventListener(
 
 function render() {
 
+    const messages =
+        getMessages();
+
     const box =
         document.getElementById(
             "messages"
@@ -208,10 +287,7 @@ render();
 
 function save() {
 
-    localStorage.setItem(
-        "chat_history",
-        JSON.stringify(messages)
-    );
+    saveSessions();
 }
 
 /* =========================
