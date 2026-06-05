@@ -90,6 +90,143 @@ function setMessages(arr) {
 }
 
 /* =========================
+   Sidebar
+========================= */
+
+function renderSidebar() {
+
+    const chatList =
+        document.getElementById(
+            "chatList"
+        );
+
+    if (!chatList) return;
+
+    chatList.innerHTML = "";
+
+    sessions.forEach(
+        session => {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
+
+            item.className =
+                "chat-item";
+
+            if (
+                session.id ===
+                currentSessionId
+            ) {
+
+                item.classList.add(
+                    "active"
+                );
+            }
+
+            item.innerHTML = `
+
+                <div class="chat-title">
+                    ${session.title}
+                </div>
+
+                <button
+                    class="delete-chat"
+                    onclick="event.stopPropagation(); deleteSession('${session.id}')">
+
+                    🗑
+
+                </button>
+            `;
+
+            item.onclick =
+                () =>
+                    switchSession(
+                        session.id
+                    );
+
+            chatList.appendChild(
+                item
+            );
+        }
+    );
+}
+
+function switchSession(
+    sessionId
+) {
+
+    currentSessionId =
+        sessionId;
+
+    saveSessions();
+
+    renderSidebar();
+
+    render();
+}
+
+function deleteSession(
+    sessionId
+) {
+
+    if (
+        !confirm(
+            "Delete this chat?"
+        )
+    ) {
+        return;
+    }
+
+    sessions =
+        sessions.filter(
+            s =>
+                s.id !==
+                sessionId
+        );
+
+    if (
+        sessions.length === 0
+    ) {
+
+        const first = {
+
+            id:
+                Date.now()
+                    .toString(),
+
+            title:
+                "New Chat",
+
+            messages: []
+        };
+
+        sessions.push(
+            first
+        );
+
+        currentSessionId =
+            first.id;
+    }
+
+    if (
+        currentSessionId ===
+        sessionId
+    ) {
+
+        currentSessionId =
+            sessions[0].id;
+    }
+
+    saveSessions();
+
+    renderSidebar();
+
+    render();
+}
+
+/* =========================
    多会话系统
 ========================= */
 
@@ -129,6 +266,20 @@ if (sessions.length === 0) {
 
     saveSessions();
 }
+
+/* =========================
+   初始化页面
+========================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        renderSidebar();
+
+        render();
+    }
+);
 
 /* =========================
    状态控制
@@ -279,7 +430,6 @@ function render() {
         box.scrollHeight;
 }
 
-render();
 
 /* =========================
    保存聊天记录
@@ -536,15 +686,39 @@ if (fileInfo)
 
 function newChat() {
 
-    const ok = confirm(
-        "Start a new conversation?"
+    const session = {
+
+        id:
+            Date.now()
+                .toString(),
+
+        title:
+            "New Chat",
+
+        messages: []
+    };
+
+    sessions.unshift(
+        session
     );
 
-    if (!ok) return;
+    if (
+        sessions.length > 20
+    ) {
 
-    messages = [];
+        sessions =
+            sessions.slice(
+                0,
+                20
+            );
+    }
 
-    save();
+    currentSessionId =
+        session.id;
+
+    saveSessions();
+
+    renderSidebar();
 
     render();
 }
