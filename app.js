@@ -485,6 +485,9 @@ async function fetchWithTimeout(
 
 async function sendMessage() {
 
+    let messages =
+        getMessages();
+
     if (isSending) return;
 
     const input =
@@ -666,12 +669,25 @@ if (fileInfo)
         messages.length > 40
     ) {
 
-        messages =
+        const trimmed =
             messages.slice(-40);
-    }
 
+        setMessages(
+            trimmed
+        );
+
+    } else {
+
+        setMessages(
+            messages
+        );
+    }
+    
     save();
+
     render();
+
+    renderSidebar();
 
     sendBtn.disabled = false;
 
