@@ -488,6 +488,12 @@ async function sendMessage() {
     let messages =
         getMessages();
 
+    console.log(
+        "messages =",
+        messages,
+        Array.isArray(messages)
+    );
+
     if (isSending) return;
 
     const input =
