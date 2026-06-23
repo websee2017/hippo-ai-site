@@ -6,13 +6,28 @@
 <title>Hippo AI</title>
 
 <link rel="stylesheet" href="style.css">
+
+<style>
+/* 简单补充：切换按钮 */
+.switch {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #666;
+    cursor: pointer;
+    text-align: center;
+}
+.switch:hover {
+    text-decoration: underline;
+}
+</style>
+
 </head>
 
 <body>
 
 <div class="page">
 
-    <!-- 左侧品牌区 -->
+    <!-- 左侧 -->
     <div class="left">
 
         <div class="hippo-wrap">
@@ -29,21 +44,25 @@
 
     </div>
 
-    <!-- 右侧登录区 -->
+    <!-- 右侧 -->
     <div class="right">
 
         <div class="card">
 
-            <h2>Welcome back</h2>
-            <p class="sub">Sign in to continue</p>
+            <h2 id="title">Welcome back</h2>
+            <p class="sub" id="sub">Sign in to continue</p>
 
             <input type="email" id="email" placeholder="Email">
             <input type="password" id="password" placeholder="Password">
 
-            <button onclick="login()">Sign in</button>
+            <button onclick="submitAuth()" id="btn">Sign in</button>
 
             <div class="forgot" onclick="forgotPassword()">
                 Forgot password?
+            </div>
+
+            <div class="switch" onclick="toggleMode()">
+                No account? Click to register
             </div>
 
             <div id="msg"></div>
@@ -54,48 +73,87 @@
 
 </div>
 
-<!-- Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script>
-const supabaseUrl = "https://komjwvwxeaqfnxfphxou.supabase.co";
-const supabaseKey = "sb_publishable_1atUPorr5mJZO09jVcvkXw_v_dM7qPN";
+let isLoginMode = true;
 
-const client = supabase.createClient(supabaseUrl, supabaseKey);
+// =============================
+// 切换 登录 / 注册
+// =============================
+function toggleMode() {
+    isLoginMode = !isLoginMode;
 
-async function login() {
+    document.getElementById("title").innerText =
+        isLoginMode ? "Welcome back" : "Create account";
+
+    document.getElementById("sub").innerText =
+        isLoginMode ? "Sign in to continue" : "Sign up to get started";
+
+    document.getElementById("btn").innerText =
+        isLoginMode ? "Sign in" : "Sign up";
+
+    document.querySelector(".switch").innerText =
+        isLoginMode ? "No account? Click to register" : "Already have account? Sign in";
+
+    document.getElementById("msg").innerText = "";
+}
+
+// =============================
+// 注册 + 登录统一入口
+// =============================
+async function submitAuth() {
 
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
-    const { error } = await client.auth.signInWithPassword({
-        email,
-        password
-    });
-
-    if (error) {
-        document.getElementById("msg").innerText = error.message;
+    if (!email || !password) {
+        document.getElementById("msg").innerText = "Please fill all fields";
         return;
     }
+
+    const endpoint = isLoginMode
+        ? "https://auth.hippo1996.top/api/login"
+        : "https://auth.hippo1996.top/api/register";
+
+    const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+        document.getElementById("msg").innerText =
+            data.error || "Request failed";
+        return;
+    }
+
+    // =============================
+    // 注册成功
+    // =============================
+    if (!isLoginMode) {
+        document.getElementById("msg").innerText =
+            "Registration successful, please sign in";
+        toggleMode();
+        return;
+    }
+
+    // =============================
+    // 登录成功
+    // =============================
+    localStorage.setItem("token", data.token);
 
     window.location.href = "chat.html";
 }
 
-async function forgotPassword() {
-
-    const email = document.getElementById("email").value;
-
-    if (!email) {
-        document.getElementById("msg").innerText = "Please enter email first";
-        return;
-    }
-
-    const { error } = await client.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + "/index.html"
-    });
-
+// =============================
+// 忘记密码（暂未实现）
+// =============================
+function forgotPassword() {
     document.getElementById("msg").innerText =
-        error ? error.message : "Reset email sent!";
+        "Password reset not implemented yet (next step we can add it)";
 }
 </script>
 
