@@ -1,7 +1,8 @@
-const WORKER_URL = "https://auth.hippo1996.top";
+const AUTH_URL = "https://auth.hippo1996.top";
+const CHAT_URL = "https://hippo-ai.hippo1996.top";
 
 /* =========================
-   登录检查（替代 Supabase）
+   登录检查（Auth Worker）
 ========================= */
 let currentUser = null;
 
@@ -14,7 +15,7 @@ async function checkLogin() {
         return;
     }
 
-    const res = await fetch(`${WORKER_URL}/api/me`, {
+    const res = await fetch(`${AUTH_URL}/api/me`, {
         headers: {
             "Authorization": "Bearer " + token
         }
@@ -27,7 +28,6 @@ async function checkLogin() {
     }
 
     currentUser = await res.json();
-
     console.log("Logged in:", currentUser.email);
 }
 
@@ -37,7 +37,7 @@ async function checkLogin() {
 checkLogin();
 
 /* =========================
-   多会话系统（保留你的逻辑）
+   会话系统
 ========================= */
 
 let sessions =
@@ -67,24 +67,15 @@ if (sessions.length === 0) {
    保存
 ========================= */
 function saveSessions() {
-    localStorage.setItem(
-        "chat_sessions",
-        JSON.stringify(sessions)
-    );
-
-    localStorage.setItem(
-        "current_session",
-        currentSessionId
-    );
+    localStorage.setItem("chat_sessions", JSON.stringify(sessions));
+    localStorage.setItem("current_session", currentSessionId);
 }
 
 /* =========================
    当前会话
 ========================= */
 function getCurrentSession() {
-    return sessions.find(
-        s => s.id === currentSessionId
-    );
+    return sessions.find(s => s.id === currentSessionId);
 }
 
 function getMessages() {
@@ -101,14 +92,12 @@ function setMessages(arr) {
 }
 
 /* =========================
-   Sidebar（原样保留）
+   Sidebar
 ========================= */
 
 function renderSidebar() {
 
-    const chatList =
-        document.getElementById("chatList");
-
+    const chatList = document.getElementById("chatList");
     if (!chatList) return;
 
     chatList.innerHTML = "";
@@ -184,15 +173,10 @@ function render() {
         const div = document.createElement("div");
         div.classList.add("msg");
 
-        if (msg.role === "user") {
-            div.classList.add("user");
-        } else {
-            div.classList.add("ai");
-        }
+        if (msg.role === "user") div.classList.add("user");
+        else div.classList.add("ai");
 
-        if (msg.thinking) {
-            div.classList.add("thinking");
-        }
+        if (msg.thinking) div.classList.add("thinking");
 
         div.textContent = msg.content;
         box.appendChild(div);
@@ -208,7 +192,6 @@ function render() {
 async function fetchWithTimeout(url, options = {}, timeout = 60000) {
 
     const controller = new AbortController();
-
     const timer = setTimeout(() => controller.abort(), timeout);
 
     try {
@@ -227,7 +210,7 @@ async function fetchWithTimeout(url, options = {}, timeout = 60000) {
 }
 
 /* =========================
-   发送消息（已接入AI权限）
+   发送消息（核心修复）
 ========================= */
 
 async function sendMessage() {
@@ -271,12 +254,12 @@ async function sendMessage() {
 
     try {
 
-        let contextMessages = messages
+        const contextMessages = messages
             .filter(m => !m.thinking)
             .slice(-40);
 
         const response = await fetchWithTimeout(
-            `${WORKER_URL}/api/chat`,
+            `${CHAT_URL}/api/chat`,
             {
                 method: "POST",
                 headers: {
@@ -336,7 +319,6 @@ function newChat() {
     };
 
     sessions.unshift(session);
-
     currentSessionId = session.id;
 
     saveSessions();
@@ -345,14 +327,14 @@ function newChat() {
 }
 
 /* =========================
-   上传（保留原逻辑）
+   上传
 ========================= */
 
 let uploadedImage = null;
 let isSending = false;
 
 /* =========================
-   登出（已改Cloudflare）
+   登出
 ========================= */
 
 function logout() {
@@ -361,7 +343,7 @@ function logout() {
 }
 
 /* =========================
-   修改密码（暂时保留）
+   修改密码（预留）
 ========================= */
 
 function changePassword() {
@@ -369,7 +351,7 @@ function changePassword() {
 }
 
 /* =========================
-   初始化渲染
+   初始化
 ========================= */
 
 document.addEventListener("DOMContentLoaded", () => {
