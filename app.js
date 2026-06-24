@@ -32,9 +32,6 @@ async function checkLogin() {
     console.log("Logged in:", currentUser.email);
 }
 
-/* =========================
-   初始化登录
-========================= */
 checkLogin();
 
 /* =========================
@@ -44,47 +41,28 @@ checkLogin();
 let sessions = JSON.parse(localStorage.getItem("chat_sessions")) || [];
 let currentSessionId = localStorage.getItem("current_session");
 
-/* 初始化会话 */
 if (sessions.length === 0) {
-
     const first = {
         id: Date.now().toString(),
         title: "New Chat",
         messages: []
     };
-
     sessions.push(first);
     currentSessionId = first.id;
-
     saveSessions();
 }
 
-/* =========================
-   保存
-========================= */
 function saveSessions() {
     localStorage.setItem("chat_sessions", JSON.stringify(sessions));
     localStorage.setItem("current_session", currentSessionId);
 }
 
-/* =========================
-   当前会话
-========================= */
 function getCurrentSession() {
     return sessions.find(s => s.id === currentSessionId);
 }
 
 function getMessages() {
-    const session = getCurrentSession();
-    return session ? session.messages : [];
-}
-
-function setMessages(arr) {
-    const session = getCurrentSession();
-    if (!session) return;
-
-    session.messages = arr;
-    saveSessions();
+    return getCurrentSession()?.messages || [];
 }
 
 /* =========================
@@ -109,10 +87,7 @@ function renderSidebar() {
 
         item.innerHTML = `
             <div class="chat-title">${session.title}</div>
-            <button class="delete-chat"
-                onclick="event.stopPropagation(); deleteSession('${session.id}')">
-                🗑
-            </button>
+            <button onclick="event.stopPropagation(); deleteSession('${session.id}')">🗑</button>
         `;
 
         item.onclick = () => switchSession(session.id);
@@ -129,8 +104,6 @@ function switchSession(id) {
 }
 
 function deleteSession(id) {
-
-    if (!confirm("Delete this chat?")) return;
 
     sessions = sessions.filter(s => s.id !== id);
 
@@ -154,25 +127,20 @@ function deleteSession(id) {
 }
 
 /* =========================
-   渲染消息
+   UI渲染
 ========================= */
 
 function render() {
 
-    const messages = getMessages();
     const box = document.getElementById("messages");
+    const messages = getMessages();
 
     box.innerHTML = "";
 
     messages.forEach(msg => {
 
         const div = document.createElement("div");
-        div.classList.add("msg");
-
-        if (msg.role === "user") div.classList.add("user");
-        else div.classList.add("ai");
-
-        if (msg.thinking) div.classList.add("thinking");
+        div.className = "msg " + (msg.role === "user" ? "user" : "ai");
 
         div.textContent = msg.content;
         box.appendChild(div);
@@ -182,31 +150,40 @@ function render() {
 }
 
 /* =========================
-   timeout fetch
+   图片上传（核心新增）
 ========================= */
 
-async function fetchWithTimeout(url, options = {}, timeout = 60000) {
+let uploadedImage = null;
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeout);
+document.addEventListener("DOMContentLoaded", () => {
 
-    try {
-        const res = await fetch(url, {
-            ...options,
-            signal: controller.signal
+    const fileInput = document.getElementById("fileInput");
+
+    if (fileInput) {
+        fileInput.addEventListener("change", (e) => {
+
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (file.size > 1 * 1024 * 1024) {
+                alert("File too large (max 1MB)");
+                fileInput.value = "";
+                return;
+            }
+
+            uploadedImage = file;
+
+            const fileInfo = document.getElementById("fileInfo");
+            if (fileInfo) fileInfo.innerText = file.name;
         });
-
-        clearTimeout(timer);
-        return res;
-
-    } catch (err) {
-        clearTimeout(timer);
-        throw err;
     }
-}
+
+    renderSidebar();
+    render();
+});
 
 /* =========================
-   发送消息（核心）
+   AI发送
 ========================= */
 
 let isSending = false;
@@ -220,7 +197,7 @@ async function sendMessage() {
 
     const text = input.value.trim();
 
-    if (!text) return;
+    if (!text && !uploadedImage) return;
 
     const token = localStorage.getItem("token");
 
@@ -239,44 +216,34 @@ async function sendMessage() {
 
     messages.push({
         role: "user",
-        content: text
+        content: uploadedImage
+            ? `${text}\n[Image: ${uploadedImage.name}]`
+            : text
     });
 
     render();
 
     messages.push({
         role: "assistant",
-        content: "Thinking...",
-        thinking: true
+        content: "Thinking..."
     });
 
     render();
 
     try {
 
-        const contextMessages = messages
-            .filter(m => !m.thinking)
-            .slice(-40);
-
-        const response = await fetchWithTimeout(
-            `${API_BASE}/api/chat`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token
-                },
-                body: JSON.stringify({
-                    messages: contextMessages
-                })
-            }
-        );
+        const response = await fetch(`${API_BASE}/api/chat`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            },
+            body: JSON.stringify({
+                messages: messages.filter(m => m.content !== "Thinking...")
+            })
+        });
 
         const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || "AI error");
-        }
 
         messages.pop();
 
@@ -295,7 +262,21 @@ async function sendMessage() {
         });
     }
 
-    setMessages(messages);
+    /* 清理上传状态 */
+    uploadedImage = null;
+
+    const fileInfo = document.getElementById("fileInfo");
+    if (fileInfo) fileInfo.innerText = "No file selected";
+
+    const fileInput = document.getElementById("fileInput");
+    if (fileInput) fileInput.value = "";
+
+    sessions = sessions.map(s => {
+        if (s.id === currentSessionId) {
+            s.messages = messages;
+        }
+        return s;
+    });
 
     saveSessions();
     render();
@@ -303,11 +284,10 @@ async function sendMessage() {
 
     sendBtn.disabled = false;
     isSending = false;
-    input.focus();
 }
 
 /* =========================
-   新聊天
+   其他功能
 ========================= */
 
 function newChat() {
@@ -326,34 +306,11 @@ function newChat() {
     render();
 }
 
-/* =========================
-   上传（保留）
-========================= */
-
-let uploadedImage = null;
-
-/* =========================
-   logout
-========================= */
-
 function logout() {
     localStorage.removeItem("token");
     window.location.href = "index.html";
 }
 
-/* =========================
-   password
-========================= */
-
 function changePassword() {
     alert("Coming soon");
 }
-
-/* =========================
-   init
-========================= */
-
-document.addEventListener("DOMContentLoaded", () => {
-    renderSidebar();
-    render();
-});
