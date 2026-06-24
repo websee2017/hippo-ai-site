@@ -17,11 +17,9 @@
     <div class="sidebar">
 
         <div class="sidebar-header">
-
             <button class="new-chat-btn" onclick="newChat()">
                 + New Chat
             </button>
-
         </div>
 
         <div id="chatList" class="chat-list"></div>
@@ -46,10 +44,10 @@
 
         </div>
 
-        <!-- 消息 -->
+        <!-- 消息区 -->
         <div id="messages" class="messages"></div>
 
-        <!-- 上传 -->
+        <!-- 上传区（UI保留） -->
         <div class="upload-area">
 
             <input type="file" id="fileInput"
@@ -60,17 +58,17 @@
             <div class="upload-tip">
                 Supports JPG, PNG, WEBP images.<br>
                 PDF support coming soon.<br>
-                Maximum file size: 1MB
+                Max size: 1MB
             </div>
 
         </div>
 
-        <!-- 模型 -->
+        <!-- 模型信息 -->
         <div class="model-bar">
-            Model: GPT-5 Mini • Vision Enabled • Max File 1MB
+            Model: GPT-5 Mini • Vision Ready
         </div>
 
-        <!-- 输入 -->
+        <!-- 输入区 -->
         <div class="input-area">
 
             <input id="input"
@@ -86,104 +84,8 @@
 
 </div>
 
-<script>
-const API_BASE = "https://auth.hippo1996.top";
-
-// ==========================
-// 页面加载：检查登录
-// ==========================
-window.onload = async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-        window.location.href = "index.html";
-        return;
-    }
-
-    // 获取用户信息
-    const res = await fetch(`${API_BASE}/api/me`, {
-        headers: {
-            "Authorization": "Bearer " + token
-        }
-    });
-
-    if (!res.ok) {
-        localStorage.removeItem("token");
-        window.location.href = "index.html";
-        return;
-    }
-
-    const user = await res.json();
-
-    document.getElementById("userEmail").innerText =
-        `(${user.email})`;
-};
-
-// ==========================
-// 发送消息（核心 AI 权限）
-// ==========================
-async function sendMessage() {
-
-    const input = document.getElementById("input");
-    const text = input.value.trim();
-    if (!text) return;
-
-    addMessage("user", text);
-    input.value = "";
-
-    const token = localStorage.getItem("token");
-
-    const res = await fetch(`${API_BASE}/api/chat`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token
-        },
-        body: JSON.stringify({
-            message: text
-        })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-        addMessage("ai", "❌ " + (data.error || "AI request failed"));
-        return;
-    }
-
-    addMessage("ai", data.reply || "No response");
-}
-
-// ==========================
-// UI消息
-// ==========================
-function addMessage(role, text) {
-    const div = document.createElement("div");
-    div.className = "msg " + role;
-    div.innerText = text;
-
-    document.getElementById("messages").appendChild(div);
-}
-
-// ==========================
-// 登出
-// ==========================
-function logout() {
-    localStorage.removeItem("token");
-    window.location.href = "index.html";
-}
-
-// ==========================
-// 占位功能
-// ==========================
-function newChat() {
-    document.getElementById("messages").innerHTML = "";
-}
-
-function changePassword() {
-    alert("Next step we can add password reset system");
-}
-</script>
+<!-- ⚠️ 只保留一个JS入口 -->
+<script src="app.js"></script>
 
 </body>
 </html>
