@@ -1,10 +1,32 @@
 const API_BASE = "https://auth.hippo1996.top";
 
 /* =========================
-   登录检查
+   全局状态
 ========================= */
 let currentUser = null;
+let sessions = [];
+let currentSessionId = null;
+let uploadedImage = null;
+let isSending = false;
 
+/* =========================
+   初始化入口（统一控制）
+========================= */
+document.addEventListener("DOMContentLoaded", async () => {
+
+    await checkLogin();
+
+    initSessions();
+
+    bindFileInput();
+
+    renderSidebar();
+    render();
+});
+
+/* =========================
+   登录检查
+========================= */
 async function checkLogin() {
 
     const token = localStorage.getItem("token");
@@ -29,29 +51,36 @@ async function checkLogin() {
     }
 
     currentUser = await res.json();
-    console.log("Logged in:", currentUser.email);
 }
-
-checkLogin();
 
 /* =========================
-   会话系统
+   session 初始化
 ========================= */
+function initSessions() {
 
-let sessions = JSON.parse(localStorage.getItem("chat_sessions")) || [];
-let currentSessionId = localStorage.getItem("current_session");
+    sessions = JSON.parse(localStorage.getItem("chat_sessions")) || [];
+    currentSessionId = localStorage.getItem("current_session");
 
-if (sessions.length === 0) {
-    const first = {
-        id: Date.now().toString(),
-        title: "New Chat",
-        messages: []
-    };
-    sessions.push(first);
-    currentSessionId = first.id;
-    saveSessions();
+    if (sessions.length === 0) {
+        const first = {
+            id: Date.now().toString(),
+            title: "New Chat",
+            messages: []
+        };
+
+        sessions.push(first);
+        currentSessionId = first.id;
+        saveSessions();
+    }
+
+    if (!currentSessionId) {
+        currentSessionId = sessions[0].id;
+    }
 }
 
+/* =========================
+   storage
+========================= */
 function saveSessions() {
     localStorage.setItem("chat_sessions", JSON.stringify(sessions));
     localStorage.setItem("current_session", currentSessionId);
@@ -66,9 +95,8 @@ function getMessages() {
 }
 
 /* =========================
-   Sidebar
+   sidebar
 ========================= */
-
 function renderSidebar() {
 
     const chatList = document.getElementById("chatList");
@@ -96,6 +124,9 @@ function renderSidebar() {
     });
 }
 
+/* =========================
+   session control
+========================= */
 function switchSession(id) {
     currentSessionId = id;
     saveSessions();
@@ -115,9 +146,7 @@ function deleteSession(id) {
         };
         sessions.push(first);
         currentSessionId = first.id;
-    }
-
-    if (currentSessionId === id) {
+    } else {
         currentSessionId = sessions[0].id;
     }
 
@@ -126,13 +155,30 @@ function deleteSession(id) {
     render();
 }
 
-/* =========================
-   UI渲染
-========================= */
+function newChat() {
 
+    const session = {
+        id: Date.now().toString(),
+        title: "New Chat",
+        messages: []
+    };
+
+    sessions.unshift(session);
+    currentSessionId = session.id;
+
+    saveSessions();
+    renderSidebar();
+    render();
+}
+
+/* =========================
+   render
+========================= */
 function render() {
 
     const box = document.getElementById("messages");
+    if (!box) return;
+
     const messages = getMessages();
 
     box.innerHTML = "";
@@ -141,8 +187,8 @@ function render() {
 
         const div = document.createElement("div");
         div.className = "msg " + (msg.role === "user" ? "user" : "ai");
-
         div.textContent = msg.content;
+
         box.appendChild(div);
     });
 
@@ -150,44 +196,34 @@ function render() {
 }
 
 /* =========================
-   图片上传（核心新增）
+   file upload（稳定版）
 ========================= */
-
-let uploadedImage = null;
-
-document.addEventListener("DOMContentLoaded", () => {
+function bindFileInput() {
 
     const fileInput = document.getElementById("fileInput");
+    if (!fileInput) return;
 
-    if (fileInput) {
-        fileInput.addEventListener("change", (e) => {
+    fileInput.addEventListener("change", (e) => {
 
-            const file = e.target.files[0];
-            if (!file) return;
+        const file = e.target.files[0];
+        if (!file) return;
 
-            if (file.size > 1 * 1024 * 1024) {
-                alert("File too large (max 1MB)");
-                fileInput.value = "";
-                return;
-            }
+        if (file.size > 1 * 1024 * 1024) {
+            alert("File too large (max 1MB)");
+            fileInput.value = "";
+            return;
+        }
 
-            uploadedImage = file;
+        uploadedImage = file;
 
-            const fileInfo = document.getElementById("fileInfo");
-            if (fileInfo) fileInfo.innerText = file.name;
-        });
-    }
-
-    renderSidebar();
-    render();
-});
+        const fileInfo = document.getElementById("fileInfo");
+        if (fileInfo) fileInfo.innerText = file.name;
+    });
+}
 
 /* =========================
-   AI发送
+   send message
 ========================= */
-
-let isSending = false;
-
 async function sendMessage() {
 
     if (isSending) return;
@@ -202,7 +238,6 @@ async function sendMessage() {
     const token = localStorage.getItem("token");
 
     if (!token) {
-        alert("Not logged in");
         window.location.href = "index.html";
         return;
     }
@@ -232,7 +267,7 @@ async function sendMessage() {
 
     try {
 
-        const response = await fetch(`${API_BASE}/api/chat`, {
+        const res = await fetch(`${API_BASE}/api/chat`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -243,7 +278,7 @@ async function sendMessage() {
             })
         });
 
-        const data = await response.json();
+        const data = await res.json();
 
         messages.pop();
 
@@ -262,7 +297,7 @@ async function sendMessage() {
         });
     }
 
-    /* 清理上传状态 */
+    /* 清理上传 */
     uploadedImage = null;
 
     const fileInfo = document.getElementById("fileInfo");
@@ -273,39 +308,22 @@ async function sendMessage() {
 
     sessions = sessions.map(s => {
         if (s.id === currentSessionId) {
-            s.messages = messages;
+            return { ...s, messages };
         }
         return s;
     });
 
     saveSessions();
-    render();
     renderSidebar();
+    render();
 
     sendBtn.disabled = false;
     isSending = false;
 }
 
 /* =========================
-   其他功能
+   logout
 ========================= */
-
-function newChat() {
-
-    const session = {
-        id: Date.now().toString(),
-        title: "New Chat",
-        messages: []
-    };
-
-    sessions.unshift(session);
-    currentSessionId = session.id;
-
-    saveSessions();
-    renderSidebar();
-    render();
-}
-
 function logout() {
     localStorage.removeItem("token");
     window.location.href = "index.html";
