@@ -1,8 +1,7 @@
-const AUTH_URL = "https://auth.hippo1996.top";
-const CHAT_URL = "https://hippo-ai.hippo1996.top";
+const API_BASE = "https://auth.hippo1996.top";
 
 /* =========================
-   登录检查（Auth Worker）
+   登录检查
 ========================= */
 let currentUser = null;
 
@@ -15,8 +14,10 @@ async function checkLogin() {
         return;
     }
 
-    const res = await fetch(`${AUTH_URL}/api/me`, {
+    const res = await fetch(`${API_BASE}/api/me`, {
+        method: "POST",
         headers: {
+            "Content-Type": "application/json",
             "Authorization": "Bearer " + token
         }
     });
@@ -32,7 +33,7 @@ async function checkLogin() {
 }
 
 /* =========================
-   初始化
+   初始化登录
 ========================= */
 checkLogin();
 
@@ -40,15 +41,10 @@ checkLogin();
    会话系统
 ========================= */
 
-let sessions =
-    JSON.parse(localStorage.getItem("chat_sessions")) || [];
+let sessions = JSON.parse(localStorage.getItem("chat_sessions")) || [];
+let currentSessionId = localStorage.getItem("current_session");
 
-let currentSessionId =
-    localStorage.getItem("current_session");
-
-/* =========================
-   初始化会话
-========================= */
+/* 初始化会话 */
 if (sessions.length === 0) {
 
     const first = {
@@ -186,7 +182,7 @@ function render() {
 }
 
 /* =========================
-   超时请求
+   timeout fetch
 ========================= */
 
 async function fetchWithTimeout(url, options = {}, timeout = 60000) {
@@ -210,19 +206,21 @@ async function fetchWithTimeout(url, options = {}, timeout = 60000) {
 }
 
 /* =========================
-   发送消息（核心修复）
+   发送消息（核心）
 ========================= */
+
+let isSending = false;
 
 async function sendMessage() {
 
-    let messages = getMessages();
+    if (isSending) return;
 
     const input = document.getElementById("input");
     const sendBtn = document.querySelector(".input-area button");
 
     const text = input.value.trim();
 
-    if (!text && !uploadedImage) return;
+    if (!text) return;
 
     const token = localStorage.getItem("token");
 
@@ -236,6 +234,8 @@ async function sendMessage() {
     sendBtn.disabled = true;
 
     input.value = "";
+
+    let messages = getMessages();
 
     messages.push({
         role: "user",
@@ -259,7 +259,7 @@ async function sendMessage() {
             .slice(-40);
 
         const response = await fetchWithTimeout(
-            `${CHAT_URL}/api/chat`,
+            `${API_BASE}/api/chat`,
             {
                 method: "POST",
                 headers: {
@@ -327,14 +327,13 @@ function newChat() {
 }
 
 /* =========================
-   上传
+   上传（保留）
 ========================= */
 
 let uploadedImage = null;
-let isSending = false;
 
 /* =========================
-   登出
+   logout
 ========================= */
 
 function logout() {
@@ -343,15 +342,15 @@ function logout() {
 }
 
 /* =========================
-   修改密码（预留）
+   password
 ========================= */
 
 function changePassword() {
-    alert("You can add this later (Cloudflare version)");
+    alert("Coming soon");
 }
 
 /* =========================
-   初始化
+   init
 ========================= */
 
 document.addEventListener("DOMContentLoaded", () => {
