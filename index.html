@@ -8,7 +8,6 @@
 <link rel="stylesheet" href="style.css">
 
 <style>
-/* 简单补充：切换按钮 */
 .switch {
     margin-top: 10px;
     font-size: 13px;
@@ -75,9 +74,20 @@
 
 <script>
 let isLoginMode = true;
+let isLoading = false;
 
 // =============================
-// 切换 登录 / 注册
+// 自动登录跳转
+// =============================
+window.onload = () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+        window.location.href = "chat.html";
+    }
+};
+
+// =============================
+// 切换登录 / 注册
 // =============================
 function toggleMode() {
     isLoginMode = !isLoginMode;
@@ -98,15 +108,19 @@ function toggleMode() {
 }
 
 // =============================
-// 注册 + 登录统一入口
+// 登录 / 注册
 // =============================
 async function submitAuth() {
 
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+    if (isLoading) return;
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const msg = document.getElementById("msg");
+    const btn = document.getElementById("btn");
 
     if (!email || !password) {
-        document.getElementById("msg").innerText = "Please fill all fields";
+        msg.innerText = "Please fill all fields";
         return;
     }
 
@@ -114,46 +128,62 @@ async function submitAuth() {
         ? "https://auth.hippo1996.top/api/login"
         : "https://auth.hippo1996.top/api/register";
 
-    const res = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ email, password })
-    });
+    try {
 
-    const data = await res.json();
+        isLoading = true;
+        btn.disabled = true;
+        btn.innerText = "Loading...";
 
-    if (!res.ok) {
-        document.getElementById("msg").innerText =
-            data.error || "Request failed";
-        return;
+        const res = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            msg.innerText = data.error || "Request failed";
+            return;
+        }
+
+        // 注册成功
+        if (!isLoginMode) {
+            msg.innerText = "Registration successful, please sign in";
+            toggleMode();
+            return;
+        }
+
+        // 登录成功
+        localStorage.setItem("token", data.token);
+        window.location.href = "chat.html";
+
+    } catch (err) {
+        msg.innerText = "Network error";
+    } finally {
+        isLoading = false;
+        btn.disabled = false;
+        btn.innerText = isLoginMode ? "Sign in" : "Sign up";
     }
-
-    // =============================
-    // 注册成功
-    // =============================
-    if (!isLoginMode) {
-        document.getElementById("msg").innerText =
-            "Registration successful, please sign in";
-        toggleMode();
-        return;
-    }
-
-    // =============================
-    // 登录成功
-    // =============================
-    localStorage.setItem("token", data.token);
-
-    window.location.href = "chat.html";
 }
 
 // =============================
-// 忘记密码（暂未实现）
+// 回车提交
+// =============================
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        submitAuth();
+    }
+});
+
+// =============================
+// 忘记密码（占位）
 // =============================
 function forgotPassword() {
     document.getElementById("msg").innerText =
-        "Password reset not implemented yet (next step we can add it)";
+        "Password reset not implemented yet";
 }
 </script>
 
