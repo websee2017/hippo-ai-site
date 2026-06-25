@@ -331,7 +331,39 @@ function logout() {
 }
 
 function changePassword() {
-    alert("Coming soon");
+
+    const oldPassword = prompt("Enter old password:");
+    if (!oldPassword) return;
+
+    const newPassword = prompt("Enter new password:");
+    if (!newPassword) return;
+
+    const token = localStorage.getItem("token");
+
+    fetch("https://auth.hippo1996.top/api/change-password", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+            oldPassword,
+            newPassword
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.error) {
+            alert("❌ " + data.error);
+        } else {
+            alert("✅ Password changed successfully");
+        }
+
+    })
+    .catch(err => {
+        alert("❌ Network error");
+    });
 }
 
 function toBase64(file) {
