@@ -274,7 +274,8 @@ async function sendMessage() {
                 "Authorization": "Bearer " + token
             },
             body: JSON.stringify({
-                messages: messages.filter(m => m.content !== "Thinking...")
+                messages: messages.filter(m => m.content !== "Thinking..."),
+                image: uploadedImage ? await toBase64(uploadedImage) : null
             })
         });
 
@@ -331,4 +332,13 @@ function logout() {
 
 function changePassword() {
     alert("Coming soon");
+}
+
+function toBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+    });
 }
